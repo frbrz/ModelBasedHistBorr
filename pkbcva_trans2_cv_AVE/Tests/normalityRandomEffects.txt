@@ -1,3 +1,0 @@
-eta,statistics,p-value
-eta_EMAX,0.991479,2.17303e-7
-eta_k_out,0.996134,0.00107797
