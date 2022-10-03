@@ -1,0 +1,74 @@
+<DATAFILE>
+
+[FILEINFO]
+file='../../../MIDD_VA2DF/Data/reg_data_trans_cv_ANC.csv'
+delimiter = comma
+header = {ID, VIS, TIME, Y, CVA, X_VA0, CAT_STD, CAT_TRT, COV_AGE, CAT_SEX, CAT_CNV, COV_LEA, AMT, EVID, CMT, COV_VA0, X_AGE}
+
+[CONTENT]
+ID = {use=identifier}
+TIME = {use=time}
+Y = {use=observation, name=Y, type=continuous}
+X_VA0 = {use=regressor}
+CAT_STD = {use=covariate, type=categorical}
+CAT_TRT = {use=covariate, type=categorical}
+COV_AGE = {use=covariate, type=continuous}
+CAT_SEX = {use=covariate, type=categorical}
+CAT_CNV = {use=covariate, type=categorical}
+COV_LEA = {use=covariate, type=continuous}
+AMT = {use=amount}
+EVID = {use=eventidentifier}
+COV_VA0 = {use=covariate, type=continuous}
+X_AGE = {use=regressor}
+
+<MODEL>
+
+[COVARIATE]
+input = COV_AGE
+
+[INDIVIDUAL]
+input = {EMAX_pop, omega_EMAX, k_out_pop, omega_k_out, COV_AGE, beta_EMAX_COV_AGE, C50_pop}
+
+DEFINITION:
+EMAX = {distribution=normal, typical=EMAX_pop, covariate=COV_AGE, coefficient=beta_EMAX_COV_AGE, sd=omega_EMAX}
+k_out = {distribution=logNormal, typical=k_out_pop, sd=omega_k_out}
+C50 = {distribution=logNormal, typical=C50_pop, no-variability}
+
+[LONGITUDINAL]
+input = {a, b}
+
+file = '../StructModels/PKBCVA_trans2.txt'
+
+DEFINITION:
+Y = {distribution=normal, prediction=VA, errorModel=combined1(a, b)}
+
+<FIT>
+data = Y
+model = Y
+
+<PARAMETER>
+C50_pop = {value=1, method=MLE}
+EMAX_pop = {value=0.13, method=MLE}
+a = {value=0.03, method=MLE}
+b = {value=0.1, method=MLE}
+beta_EMAX_COV_AGE = {value=0, method=MLE}
+k_out_pop = {value=0.015, method=MLE}
+omega_EMAX = {value=0.17, method=MLE}
+omega_k_out = {value=1, method=MLE}
+
+<MONOLIX>
+
+[TASKS]
+populationParameters()
+individualParameters(method = {conditionalMean, conditionalMode })
+fim(method = StochasticApproximation)
+logLikelihood(method = ImportanceSampling)
+plotResult(method = {indfits, parameterdistribution, covariancemodeldiagnosis, covariatemodeldiagnosis, obspred, vpc, residualsscatter, residualsdistribution, randomeffects, saemresults })
+
+[SETTINGS]
+GLOBAL:
+exportpath = 'pkbcva_trans2_cv_ANC'
+
+LL:
+fixedsimulations = 3000
+
