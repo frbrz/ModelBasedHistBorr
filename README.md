@@ -1,6 +1,6 @@
-# Codes for the *A model-based approach for historical borrowing, with an application to neovascular age-related macular degeneration* paper
+# Codes for *A model-based approach for historical borrowing, with an application to neovascular age-related macular degeneration*
 
-This repository contains the codes used to run and reproduce the analyses done in the *A model-based approach for historical borrowing, with an application to neovascular age-related macular degeneration* paper.
+This repository contains the codes used to run and reproduce the analyses done in the *A model-based approach for historical borrowing, with an application to neovascular age-related macular degeneration* paper. 
 
 1. Construct a Monolix dataset for the analysis, containing data from six historical nAMD trials (ANCHOR, AVENUE, HARBOR, MARINA, PIER, STAIRWAY). Data cannot be shared externally. 
 - `R/PlotSummaryData.R` provides code for exploratory plots summarizing the data.
