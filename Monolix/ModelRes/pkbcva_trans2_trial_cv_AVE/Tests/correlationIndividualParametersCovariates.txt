@@ -1,0 +1,6 @@
+parameter,covariate,statistics,p-value,test
+EMAX,beta_EMAX_CAT_STD_HARBOR,1.117,0.264182,t-Test
+EMAX,beta_EMAX_CAT_STD_MARINA,-2.60281,0.009342,t-Test
+EMAX,beta_EMAX_CAT_STD_PIER,-3.83337,0.000131886,t-Test
+EMAX,beta_EMAX_CAT_STD_STAIRWAY,0.573214,0.56659,t-Test
+EMAX,beta_EMAX_COV_AGE,-8.83399,<2.2e-16,t-Test

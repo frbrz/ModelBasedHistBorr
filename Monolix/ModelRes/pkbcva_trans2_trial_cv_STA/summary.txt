@@ -1,0 +1,113 @@
+********************************************************************************
+*                      pkbcva_trans2_trial_cv_STA.mlxtran                      *
+*                      June 23, 2021 at 18:50:28                               *
+*                      Monolix version : 2020R1                                *
+********************************************************************************
+
+
+ESTIMATION OF THE POPULATION PARAMETERS ________________________________________
+
+Fixed Effects ----------------------------     se_sa    rse(%)
+EMAX_pop                 :           0.128   0.00996       7.8
+beta_EMAX_CAT_STD_AVENUE :        -0.00566    0.0231       408
+beta_EMAX_CAT_STD_HARBOR :          0.0139    0.0122      87.9
+beta_EMAX_CAT_STD_MARINA :         -0.0315    0.0124      39.4
+beta_EMAX_CAT_STD_PIER   :         -0.0721    0.0184      25.5
+beta_EMAX_COV_AGE        :        -0.00481  0.000539      11.2
+C50_pop                  :          0.0114  0.000991      8.68
+k_out_pop                :             1.3     0.138      10.6
+
+Standard Deviation of the Random Effects -
+omega_EMAX               :           0.162   0.00308       1.9
+omega_k_out              :               3     0.114       3.8
+
+Error Model Parameters -------------------
+a                        :           0.024  0.000578      2.41
+b                        :          0.0847   0.00148      1.74
+
+Elapsed time (seconds) :  7.2e+3
+
+ _______________________________________________________________________________
+
+
+
+ESTIMATION OF THE INDIVIDUAL PARAMETERS ________________________________________
+
+
+Estimation of the individual parameters by Conditional Distribution ------------
+              min        Q1    median        Q3       max
+EMAX  :    -0.493    0.0137     0.118     0.224      1.15
+C50   :    0.0114    0.0114    0.0114    0.0114    0.0114
+k_out :      0.02      1.31      10.9      65.6   5.97e+3
+
+Elapsed time (seconds) :  6.6e+2
+
+ -------------------------------------------------------------------------------
+
+
+Estimation of the individual parameters by Conditional Mode --------------------
+              min        Q1    median        Q3       max
+EMAX  :    -0.473    0.0135     0.113     0.219      1.14
+C50   :    0.0114    0.0114    0.0114    0.0114    0.0114
+k_out :    0.0164      0.52       2.1      7.72       431
+
+Elapsed time (seconds) :      28
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+ESTIMATION OF THE FISHER INFORMATION MATRIX ____________________________________
+
+
+Estimation of the Fisher information matrix by Stochastic Approximation --------
+
+Correlation Matrix :
+                EMAX_pop         1
+       beta_EMAX_COV_AGE   0.12988         1
+beta_EMAX_CAT_STD_AVENUE  -0.42399-0.0012911         1
+beta_EMAX_CAT_STD_HARBOR  -0.81638  -0.10719   0.34652         1
+beta_EMAX_CAT_STD_MARINA  -0.79136 -0.020247    0.3404   0.64611         1
+  beta_EMAX_CAT_STD_PIER  -0.53966 -0.062427   0.22941   0.44074   0.42803         1
+                 C50_pop  0.005993-0.000869590.00055918-0.00152350.00053423  0.050149         1
+               k_out_pop -0.011361 0.0080192 -0.026814-0.0024171  0.001179 0.0063484 -0.016613         1
+              omega_EMAX 0.0042015-0.0030486  0.012486 0.00229990.00053125-0.0014678  0.024064  -0.05778         1
+             omega_k_out  0.007096  -0.01114 0.0090809-0.000676260.00025724 0.0027533 -0.021823  -0.23551  0.042144         1
+                       a-0.00018979-0.0016472 9.0692e-5 0.0025618 0.0012009-0.0033355-0.0013498 -0.026123  0.014947 -0.021036         1
+                       b   -0.0011 0.0020013 0.0009051-0.0024731 -0.001318 0.0033314 0.0011804  0.020754 -0.017184 0.0064321  -0.91722         1
+
+                               min       max   max/min
+Eigen values           :     0.083       3.1        37
+
+Elapsed time (seconds) :  1.1e+2
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+ESTIMATION OF THE LOG-LIKELIHOOD _______________________________________________
+
+                                                            (is)
+-2 x log-likelihood                       (OFV) :      -82527.42
+Akaike Information Criteria               (AIC) :      -82503.42
+Corrected Bayesian Information Criteria  (BICc) :      -82424.34
+Bayesian Information Criteria             (BIC) :      -82439.77
+
+Elapsed time                          (seconds) :        1013.18
+CPU time                              (seconds) :        1013.00
+
+
+[Importance Sampling] Standard error        : 1.919
+                      Sampling distribution : T-distribution with 5 degrees of freedom
+
+ _______________________________________________________________________________
+
+DATASET INFORMATION
+Number of individuals: 1487
+Number of observations (Y): 32559
+Number of doses: 30986
+

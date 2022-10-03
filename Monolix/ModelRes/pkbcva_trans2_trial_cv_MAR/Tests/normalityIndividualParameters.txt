@@ -1,0 +1,3 @@
+parameter,statistics,p-value,test
+EMAX,0.0343354,0.999533,Kolmogorov-Smirnov
+k_out,0.997559,0.129849,Shapiro-Wilk

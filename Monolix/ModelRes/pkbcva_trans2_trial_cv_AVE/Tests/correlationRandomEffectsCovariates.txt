@@ -1,0 +1,15 @@
+eta,covariate,statistics,p-value,test
+eta_EMAX,CAT_CNV,0.0568581,0.94473,Anova
+eta_EMAX,CAT_SEX,0.256844,0.612375,Anova
+eta_EMAX,CAT_STD,0.0216093,0.999091,Anova
+eta_EMAX,CAT_TRT,0.260472,0.903325,Anova
+eta_EMAX,COV_AGE,0.181428,0.856057,Pearson
+eta_EMAX,COV_LEA,-5.72162,1.28257e-8,Pearson
+eta_EMAX,COV_VA0,-1.37838,0.168302,Pearson
+eta_k_out,CAT_CNV,1.55741,0.211037,Anova
+eta_k_out,CAT_SEX,0.150954,0.697683,Anova
+eta_k_out,CAT_STD,1.88771,0.110122,Anova
+eta_k_out,CAT_TRT,0.665676,0.615865,Anova
+eta_k_out,COV_AGE,-0.0998136,0.920506,Pearson
+eta_k_out,COV_LEA,-2.05926,0.0396495,Pearson
+eta_k_out,COV_VA0,-3.16445,0.00158638,Pearson
