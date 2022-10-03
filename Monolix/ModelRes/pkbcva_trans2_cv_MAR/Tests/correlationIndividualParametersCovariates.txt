@@ -1,0 +1,2 @@
+parameter,covariate,statistics,p-value,test
+EMAX,beta_EMAX_COV_AGE,-8.97728,<2.2e-16,t-Test

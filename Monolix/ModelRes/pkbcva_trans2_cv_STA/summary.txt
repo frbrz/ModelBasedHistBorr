@@ -1,0 +1,105 @@
+********************************************************************************
+*                         pkbcva_trans2_cv_STA.mlxtran                         *
+*                         June 01, 2021 at 12:04:50                            *
+*                         Monolix version : 2020R1                             *
+********************************************************************************
+
+
+ESTIMATION OF THE POPULATION PARAMETERS ________________________________________
+
+Fixed Effects ----------------------------     se_sa    rse(%)
+EMAX_pop          :                  0.117   0.00439      3.74
+beta_EMAX_COV_AGE :               -0.00465  0.000542      11.7
+C50_pop           :                 0.0151  0.000709       4.7
+k_out_pop         :                   1.32     0.137      10.4
+
+Standard Deviation of the Random Effects -
+omega_EMAX        :                  0.164   0.00313      1.91
+omega_k_out       :                   2.96     0.112      3.79
+
+Error Model Parameters -------------------
+a                 :                  0.024  0.000575      2.39
+b                 :                 0.0846   0.00147      1.74
+
+Elapsed time (seconds) :  2.6e+3
+
+ _______________________________________________________________________________
+
+
+
+ESTIMATION OF THE INDIVIDUAL PARAMETERS ________________________________________
+
+
+Estimation of the individual parameters by Conditional Distribution ------------
+              min        Q1    median        Q3       max
+EMAX  :    -0.485    0.0136     0.118     0.226      1.15
+C50   :    0.0151    0.0151    0.0151    0.0151    0.0151
+k_out :     0.021      1.32       9.1      62.6   8.89e+3
+
+Elapsed time (seconds) :  4.2e+2
+
+ -------------------------------------------------------------------------------
+
+
+Estimation of the individual parameters by Conditional Mode --------------------
+              min        Q1    median        Q3       max
+EMAX  :    -0.469    0.0136     0.112     0.219      1.15
+C50   :    0.0151    0.0151    0.0151    0.0151    0.0151
+k_out :    0.0168     0.539      2.11      7.68       460
+
+Elapsed time (seconds) :      15
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+ESTIMATION OF THE FISHER INFORMATION MATRIX ____________________________________
+
+
+Estimation of the Fisher information matrix by Stochastic Approximation --------
+
+Correlation Matrix :
+         EMAX_pop         1
+beta_EMAX_COV_AGE   0.14621         1
+          C50_pop  0.017481 0.0010052         1
+        k_out_pop -0.030346 0.0093644-0.0096566         1
+       omega_EMAX  0.012398-0.0013662  0.010839   -0.0544         1
+      omega_k_out  0.019337 -0.011712 -0.016941  -0.23115  0.040216         1
+                a 0.0027927-0.0023014 0.0008662 -0.021821   0.01567 -0.025877         1
+                b-0.0057219 0.0026966-0.00021398  0.018554 -0.018492  0.009662  -0.91673         1
+
+                               min       max   max/min
+Eigen values           :     0.083       1.9        23
+
+Elapsed time (seconds) :      77
+
+ -------------------------------------------------------------------------------
+
+ _______________________________________________________________________________
+
+
+
+ESTIMATION OF THE LOG-LIKELIHOOD _______________________________________________
+
+                                                            (is)
+-2 x log-likelihood                       (OFV) :      -82491.57
+Akaike Information Criteria               (AIC) :      -82475.57
+Corrected Bayesian Information Criteria  (BICc) :      -82417.71
+Bayesian Information Criteria             (BIC) :      -82433.14
+
+Elapsed time                          (seconds) :         813.46
+CPU time                              (seconds) :         813.00
+
+
+[Importance Sampling] Standard error        : 1.986
+                      Sampling distribution : T-distribution with 5 degrees of freedom
+
+ _______________________________________________________________________________
+
+DATASET INFORMATION
+Number of individuals: 1487
+Number of observations (Y): 32559
+Number of doses: 30986
+

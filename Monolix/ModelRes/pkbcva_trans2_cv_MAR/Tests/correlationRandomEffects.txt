@@ -1,0 +1,2 @@
+eta1,eta2,coeff,statistics,p-value
+eta_EMAX,eta_k_out,0,2.52549,0.0117035
