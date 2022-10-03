@@ -1,2 +1,0 @@
-parameter,statistics(sa),p-value(sa)
-beta_EMAX_COV_AGE,5.47773,4.31e-8
