@@ -77,3 +77,35 @@ model {
   }
 }
 
+// generated quantities needed for power-scale sensitivity
+generated quantities {
+  vector [N] log_lik ; // log likelihood
+  real lprior_soc ; // temporary log prior for SOC parameter
+  real lprior ; // joint log prior
+  
+  // log likelihood (individual)
+  for (n in 1:N) { 
+    log_lik[n] = normal_lpdf(Y[n]| X[n] * beta + soc_eff, sigma);
+  }
+  
+  // log prior
+  if (mix_w == 1) {
+    // If no-mixture efficient coding
+    lprior_soc = normal_lpdf(soc_eff | mu_soc[1], sd_soc[1]);
+  } else {
+    // If mixture less efficient coding
+    lprior_soc = log_mix(
+      mix_w,
+      normal_lpdf(soc_eff | mu_soc[1], sd_soc[1]),
+      normal_lpdf(soc_eff | mu_soc[2], sd_soc[2])
+    );
+  }
+//  lprior = lprior_soc 
+//         + normal_lpdf(trt_eff|mu_trt, sd_trt) 
+//         + normal_lpdf(va0_eff | mu_va0_cov, sd_va0_cov)
+//         + normal_lpdf(sigma|mu_sig, sd_sig);
+  
+  // Only care about power scaling soc_eff prior
+  lprior = lprior_soc;
+}
+
