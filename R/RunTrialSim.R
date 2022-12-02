@@ -1,8 +1,12 @@
 ## AUTHOR: Francesco Brizzi
 ## AIM: Run trial simulations
-##      Reads in one data-set (one true treatment effect, one sample size, one historical conflict)
-##      and analyses it based on different (informative, weakly informative, power, mixture) priors
-##      Note: this file externally called on the cluster by the Submit.sh file.
+##      Analyses many datasets (one true treatment effect, one sample size, one historical conflict)
+##      one at the times using different priors
+##      (informative, weakly informative, power, mixture) priors
+##      Notes:
+##      * This file externally called on the cluster by the SubmitLSF.sh file.
+##      * All datasets with CHUNK = ch (specified by array of SubmitLSF)
+##        are analysed sequentially in this script 
 
 # Setup ------------------------------------------------------------------------
 
@@ -30,9 +34,9 @@ if (on_cluster) {
 # Working directories and loading data -----------------------------------------
 
 if (on_cluster) {
-  base_wd <- "/pstore/home/brizzif/VCPaper"
-  scratch_wd <- "/pstore/scratch/u/brizzif/VCPaper"
-  cmdstan_wd <- "/pstore/home/brizzif/.cmdstanr/cmdstan-2.27.0/"
+  base_wd <- "/home/brizzif/global/VCPaper"
+  scratch_wd <- "/scratch/site/u/brizzif/VCPaper"
+  cmdstan_wd <- "/home/brizzif/.cmdstan/cmdstan-2.27.0"
 } else {
   base_wd <- "W:/Users/brizzif/VCPaper"
   scratch_wd <- "S:/VCPaper"
@@ -41,13 +45,13 @@ if (on_cluster) {
 
 stan_wd <- file.path(base_wd, "Stan")
 dat_wd <- file.path(scratch_wd, "TrialSimData")
-save_wd <- file.path(scratch_wd, "TrialSimRes")
+save_wd <- file.path(scratch_wd, "TrialSimRes1")
 
 # Useful functions -------------------------------------------------------------
 
 source(file.path(base_wd, "R", "FunTrialAnalysis.R"))
 
-# Loading simulation master ----------------------------------------------------------------
+# Loading simulation master ----------------------------------------------------
 
 master_sim_df <- fread(file.path(dat_wd, "sim_master_df.csv"))
 
@@ -61,7 +65,7 @@ if (n_distinct(sim_df$DATA_SIM_IND) > 1) {
   stop("This code only work for a unique DATA_SIM_IND")
 }
 if (n_distinct(sim_df$DATA_IND) > 1) {
-  stop("This code only work for a unique DATA_SIM_IND")
+  stop("This code only work for a unique DATA_IND")
 }
 if (n_distinct(sim_df$N_PBO) > 1) {
   stop("This code only work for a unique N_PBO")
@@ -119,17 +123,17 @@ cmdstan_args <- list(
   adapt_delta = 0.99,
   max_treedepth = 12,
   max_try = 5,
-  timeout = 60, # in seconds, avoids stuff getting stuck on cluster
+  timeout = 80, # in seconds, avoids stuff getting stuck on cluster
   show_messages	= T
 )
 
 if (on_cluster) {
-  # Reducing memory footprint of output files doing the following
+  # Reducing memory footprint of output files
   cmdstan_args$refresh <- 0
   cmdstan_args$show_messages <- F
 }
 
-# Trial design non inferiority margin and alpha, and endpoint timeing
+# Trial design non inferiority margin and alpha, and endpoint timing
 n_i_m <- 3.9
 alpha <- 0.025
 
@@ -162,10 +166,12 @@ sd_pri <- norm_mix(w = 1, m = 0, sd = 15)
 data_ind <- unique(sim_df$DATA)
 
 # Looping over specific dataset
-res_l <- list()
-for (i in 1:length(data_ind)) {
+res_l <- setNames(vector("list", length = length(data_ind)), data_ind)
+for (i in seq_along(data_ind)) {
   
   tictoc::tic()
+  
+  print(paste("Simulation i", i, "out of", length(data_ind)))
   
   ### Data specific for this simulation
   data_tr <- data_sc[data_sc$rep == data_ind[i], ] 
@@ -183,7 +189,6 @@ for (i in 1:length(data_ind)) {
     trt_pri = trt_pri,
     cov_va0_pri = cov_va0_pri,
     sd_pri = sd_pri,
-    power = F,
     args_cmdstan = cmdstan_args,
     seed = seed
   )
@@ -193,9 +198,16 @@ for (i in 1:length(data_ind)) {
 # Clean up results -------------------------------------------------------------
 
 # Results as dataframe / csv
-res <- left_join(sim_df, bind_rows(res_l), by = "DATA")
+res_mcmc <- bind_rows(map(res_l, ~ .$RES), .id = "DATA") %>% 
+  mutate(DATA = as.integer(DATA)) %>% 
+  left_join(sim_df, ., by = "DATA")
+res_sens <- bind_rows(map(res_l, ~ .$SENS), .id = "DATA") %>% 
+  mutate(DATA = as.integer(DATA)) %>% 
+  left_join(sim_df, ., by = "DATA")
 
 # Store ------------------------------------------------------------------------
 
-save_txt <- paste0("ResChunk_", unique(sim_df$CHUNK), ".csv")
-fwrite(res, file.path(save_wd, save_txt))
+save_txt_res <- paste0("ResChunk_", unique(sim_df$CHUNK), ".csv")
+save_txt_sens <- paste0("SensChunk_", unique(sim_df$CHUNK), ".csv")
+fwrite(res_mcmc, file.path(save_wd, save_txt_res))
+fwrite(res_sens, file.path(save_wd, save_txt_sens))

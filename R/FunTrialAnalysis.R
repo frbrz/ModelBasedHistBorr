@@ -11,25 +11,30 @@ if (on_cluster) {
   suppressPackageStartupMessages(library(checkmate))
   suppressPackageStartupMessages(library(cmdstanr))
   suppressPackageStartupMessages(library(posterior))
+  suppressPackageStartupMessages(library(priorsense))
 } else {
   library(tidyverse)
   library(checkmate)
   library(cmdstanr)
   library(posterior)
+  library(priorsense)
 }
 
 # Random helper functions ------------------------------------------------------
 
-#' Function to check if a try call results in an error
-#' x is a the result of a try(fun(...)) call
-is_error_try <- function(x) {
-  inherits(x, "try-error")
-}
-
 #' Function to define a Normal mixture
-#' inspired to rBesT but want to avoid dependency on it
-#' IMPORTANT: rBesT based on rstan/stanHeaders which occasionaly
-#' cause conflicts with cmdstanR... stay away!
+#' 
+#' This was inspired from rBesT.
+#' But wanted to avoid depending on rBesT as it calls stanHeaders (rstan).
+#' stanHeaders occasionaly caused unresolvable conflicts with cmdstanR.
+#' 
+#' @param w numeric vector containing the weight of each mixture component
+#' @param m numeric vector containing the means of each mixture component
+#' @param sd numeric vector containing the standard deviation of
+#'        each mixture component
+#' @return An object of class `norm_mix` which is a dataframe of 
+#' where each column is a normal mixture characterized by a weight (row1),
+#' a mean (row2) and a standard deviation (row3).
 norm_mix <- function(w, m, sd) {
   
   ### Argument checks
@@ -52,7 +57,7 @@ norm_mix <- function(w, m, sd) {
 
 #' Function to automatically assess convergence from cmdstanr output
 #'
-#' Non convergence if one rhat > 1.05 or one divergent transition
+#' Non convergence defined if one rhat > 1.05 or one divergent transition
 #' @param obj a CmdStanMCMC object
 #' @return logical, equal to true if convergence achieved wrt above criteria
 assess_convg <- function(obj) {
@@ -70,16 +75,18 @@ assess_convg <- function(obj) {
 #' Function to run a cmdstanR model until convergence or timeout
 #' 
 #' @param model a CmdStanModel object.
-#' @param timeout numeric. Seconds after which model stops running.
-#' i.e. seconds after which Stan run is timed out.
+#' @param timeout numeric. Seconds after which model stops running
+#' (i.e. stan is timed-out)
 #' @param max_try integerish. Maximum number of attempts to run the model.
 #' Note: failure for non-convergence or timeout are not distinguished atm.
-#' @return list. list made of:
-#' - `fit`: a cmdstanR fit, for posterior analysis.
+#' @return list. list made of
+#'  \itemize{
+#' \item `fit`: a cmdstanR fit, for posterior analysis.
 #' Note this returns NA if failure reason is timeout.
-#' - `conv`: a logical, denoting whether convergence is achieved.
+#' \item `conv`: a logical, denoting whether convergence is achieved.
 #' Note that convergence is asssessed using `assess_convg` fun
-#' - `timeout`: a logical, denoting whether the stan run was timed-out.
+#' \item `timeout`: a logical, denoting whether the stan run was timed-out.
+#' }
 run_cmdstan_convg <- function(model,
                               timeout, 
                               max_try = 4,
@@ -160,8 +167,9 @@ run_cmdstan_convg <- function(model,
 
 # Functions to analyse Bayesian trial ------------------------------------------
 
-#' Function to calculate prior / data commensurability
-#' assuming that the prior is normally distributed
+#' Function to calculate prior / data commensurability (delta)
+#' based on the metric by Gravestock and Held (2017)
+#' assuming that the prior is normally distributed.
 #' 
 #' @param data data-frame. Should contains the endpoint and covariate data
 #' from the trial, but only for the control arm.
@@ -169,6 +177,10 @@ run_cmdstan_convg <- function(model,
 #' @param sd_h numeric. Contains standard deviation of the prior.
 #' @param zs logical. If TRUE (default) the delta calculation is rounded,
 #' this can avoid numerical issues in algorithm for calculation.
+#' @return A list of two objects:
+#' - `delta` the commensurability parameter
+#' - `sd` the "adapted" standard deviation of the power prior 
+#' based on commensurability
 calc_commens <- function(data, mu_h, sd_h, zs = T) {
   assert_data_frame(data)
   must_nm <- c("Y", "X_VA0")
@@ -216,15 +228,29 @@ calc_commens <- function(data, mu_h, sd_h, zs = T) {
 #' @param ni_margin (numeric) chosen non-inferiority margin
 #' @param alpha (numeric in 0-1) the chosen significance level
 #' @param mod_stan (CmdStanModel object) containing a stan model
-#' @param hyper_stan (list) containing the hyperparameters for the prior.
-#'        Must include:
-#'        - `mu_soc`: mean for SOC effect parameter.
-#'        - `sd_soc`: standard deviation for SOC effect parameter.
-#'        - `sd_trt`: standard deviation for treatment effect parameter (mean = 0)
-#'        - `sd_cov`: standard deviation for VA0 covariate parameter (mean = 0)
-#'        - `sd_sig`: standard deviation for residual sd parameter (mean = 0)
-#' @param args_cmdstan (list) of arguments to specify HMC parameters. 
-#'       Follow the  CmdStanModel$sample() convention for cmdstanr
+#' @param soc_pri (norm-mix object) containing the definition of the prior
+#'        for the standard-of-care treatment effect.
+#' @param trt_pri (norm-mix object) containing the definition of the prior
+#'        for the experimental treatment effect.
+#' @param cov_va0_pri (norm-mix object) containing the definition of the prior
+#'        for the baseline covariate effect
+#' @param sd_pri (norm-mix object) containing the definition of the prior
+#'        for the standard deviation of the residual error
+#' @param power (logical) if set to true the `soc_pri` prior is robustified,
+#'        based on Gravestock and Held (2019)
+#' @param args_cmdstan (list) parameters that specify the Stan's HMC run. 
+#'        For full details see \link[cmdstanr]{sample} 
+#' @param seed (integerish) Seed for the current analysis.
+#' @return A list of three elements.
+#'  \itemize{
+#'   \item CONV - Contains information on whether convergence 
+#'   (no rhat > 1.05, no divergent transitions) has been achieved and whether
+#'   timeout has been reached
+#'   \item RES - Contains all the important quantities of
+#'    the posteriors of interest (eg mean, 90% intervals...) as well as
+#'    decision made (ie. accept / reject non-inferiority)
+#'   \item SENS - Contains output from power-sensitivity analysis.
+#' }
 analyse_trial <- function(data_tr, 
                           true_trt_eff,
                           ni_margin = 3.9,
@@ -265,7 +291,7 @@ analyse_trial <- function(data_tr,
   assert_names(names(args_cmdstan), must.include = must_cmdstan)
   assert_logical(power, len = 1)
   assert_integerish(seed, len = 1)
-
+  
   ### Dealing with MAP priors
   n_mix_soc_pri <- ncol(soc_pri)
   map_pri_flag <- n_mix_soc_pri == 2
@@ -334,19 +360,26 @@ analyse_trial <- function(data_tr,
     show_messages = args_cmdstan$show_messages
   )
   
+  # Define data frames for time-out cases
+  conv <- with(cmdstan_out, tibble("CONV" = conv, "TIMEOUT" = timeout))
+  
   ### Output 
   # If timeout cmdstan_out has no fit object -> return NA df
   if (cmdstan_out$timeout) {
-    # Define a dataframe for cases where MCMC fails
-    out <- tibble(
+    res <- tibble(
       "DEC" = NA, "NI_PROB" = NA,
       "TRT_mean" = NA, "SOC_mean" = NA, "SDRES_mean" = NA, "VA0_mean" = NA, 
       "TRT_sd" = NA, "SOC_sd" = NA, "SDRES_sd" = NA, "VA0_sd" = NA, 
       "TRT_Q025" = NA, "SOC_Q025" = NA, "SDRES_Q025" = NA, "VA0_Q025" = NA, 
       "TRT_Q975"= NA, "SOC_Q975" = NA, "SDRES_Q975", "VA0_Q975" = NA,
-      "POW_DELTA" = NA, "POW_SD_SOC" = NA, "CONV" = FALSE, "TIMEOUT" = TRUE
+      "POW_DELTA" = NA, "POW_SD_SOC" = NA
     )
     
+    pss_summ <- tibble(
+      "variable" = NA, "mean" = NA, "median" = NA, "sd" = NA, "alpha" = NA,
+      "n_eff" = NA, "pareto_k" = NA, "cjs_dist" = NA, "component" = NA
+    )
+  
   } else {
     
     fit <- cmdstan_out$fit
@@ -358,6 +391,13 @@ analyse_trial <- function(data_tr,
         variable = c("soc_eff", "trt_eff", "va0_eff", "sigma")
       )
     )
+    
+    ### Running power sensitivity analysis
+    pss <- powerscale_sequence(fit)
+    pss_summ <- summarise_draws(pss)[[1]] %>% 
+      filter(variable == "trt_eff") %>% 
+      select(variable, mean, median, sd, alpha, n_eff, pareto_k, cjs_dist, component) %>% 
+      as_tibble()
     
     ### Bayesian decision making
     # Calculate posterior probability
@@ -374,7 +414,7 @@ analyse_trial <- function(data_tr,
     rmsd_trt <- sqrt(mean(((fit_draws$trt_eff - true_trt_eff) ^ 2)))
     
     ### Output processing
-    out <- left_join(
+    res <- left_join(
       summarize_draws(fit_draws, "mean", "sd"),
       summarize_draws(fit_draws,  ~ quantile(., probs = c(0.025, 0.975))),
       by = "variable"
@@ -396,9 +436,6 @@ analyse_trial <- function(data_tr,
       # adding RMSD and BIAS
       mutate(TRT_BIAS = bias_trt) %>% 
       mutate(TRT_RMSD = rmsd_trt) %>% 
-      # was convergence achieved
-      mutate(CONV = cmdstan_out$conv) %>% 
-      mutate(TIMEOUT = cmdstan_out$timeout) %>% 
       # Bayesian decision
       mutate(NI_PROB = p_prob) %>% 
       mutate(DEC = dec) %>% 
@@ -413,12 +450,16 @@ analyse_trial <- function(data_tr,
         TRT_Q025, SOC_Q025, SDRES_Q025, VA0_Q025,
         TRT_Q975, SOC_Q975, SDRES_Q975, VA0_Q975,
         TRT_BIAS, TRT_RMSD,
-        POW_DELTA, POW_SD_SOC, CONV, TIMEOUT
+        POW_DELTA, POW_SD_SOC
       )
   }
   
   ### Return
-  out
+  # Three dataframes
+  # CONV: information on convergence and timeout
+  # RES: posterior summaries from trial
+  # SENS: prior sensitivity analysis
+  list(CONV = conv, RES = res, SENS = pss_summ)
 }
 
 #' Wrapper function to run a trial with 4 different priors
@@ -434,24 +475,15 @@ run_trial_i <- function(data_i,
                         trt_pri,
                         cov_va0_pri,
                         sd_pri,
-                        power = F,
                         args_cmdstan,
                         seed = 1825) {
   
-  ### Results in case of failure
-  # try avoids random crashes on HPC
-  fail_df <- tibble(
-    "DEC" = NA, "NI_PROB" = NA,
-    "TRT_mean" = NA, "SOC_mean" = NA, "SDRES_mean" = NA, "VA0_mean" = NA, 
-    "TRT_sd" = NA, "SOC_sd" = NA, "SDRES_sd" = NA, "VA0_sd" = NA, 
-    "TRT_Q025" = NA, "SOC_Q025" = NA, "SDRES_Q025" = NA, "VA0_Q025" = NA, 
-    "TRT_Q975" = NA, "SOC_Q975" = NA, "SDRES_Q975", "VA0_Q975" = NA,
-    "TRT_BIAS" = NA, "TRT_RMSD" = NA,
-    "POW_DELTA" = NA, "POW_SD_SOC" = NA, "CONV" = NA, "TIMEOUT" = NA
-  )
-  
+  ### Initialization
+  res_l <- vector("list", 4)
+  names(res_l) <- c("NON_INFO", "INFO", "POWER", "MIX")
+
   ### Non-info prior
-  res_non_info <- try(analyse_trial(
+  res_l[[1]] <- analyse_trial(
     data_tr = data_i, 
     true_trt_eff = true_trt_eff,
     ni_margin = n_i_m,
@@ -464,33 +496,10 @@ run_trial_i <- function(data_i,
     power = F,
     args_cmdstan = cmdstan_args,
     seed = seed
-  ))
-  
-  # If for any reason simulations fails
-  # try once more with different seed and then fail
-  if (is_error_try(res_non_info)) {
-    res_non_info <- try(analyse_trial(
-      data_tr = data_i, 
-      true_trt_eff = true_trt_eff,
-      ni_margin = n_i_m,
-      alpha = alpha,
-      mod_stan = mod,
-      soc_pri = soc_pri_non_info,
-      trt_pri = trt_pri,
-      cov_va0_pri = cov_va0_pri,
-      sd_pri = sd_pri,
-      power = F,
-      args_cmdstan = cmdstan_args,
-      seed = seed + 10112
-    ))
-  }
-  if (is_error_try(res_non_info)) {
-    res_non_info <- fail_df
-  }
-  
+  )
   
   ### Info prior
-  res_info <- try(analyse_trial(
+  res_l[[2]] <- analyse_trial(
     data_tr = data_i, 
     true_trt_eff = true_trt_eff,
     ni_margin = n_i_m,
@@ -503,32 +512,11 @@ run_trial_i <- function(data_i,
     power = F,
     args_cmdstan = cmdstan_args,
     seed = seed
-  ))
+  )
   
-  # If for any reason simulations fails
-  # try once more with different seed and then fail
-  if (is_error_try(res_info)) {
-    res_info <- try(analyse_trial(
-      data_tr = data_i, 
-      true_trt_eff = true_trt_eff,
-      ni_margin = n_i_m,
-      alpha = alpha,
-      mod_stan = mod,
-      soc_pri = soc_pri_info,
-      trt_pri = trt_pri,
-      cov_va0_pri = cov_va0_pri,
-      sd_pri = sd_pri,
-      power = F,
-      args_cmdstan = cmdstan_args,
-      seed = seed + 10112
-    ))
-  }
-  if (is_error_try(res_info)) {
-    res_info <- fail_df
-  }
   
   ### Info power prior
-  res_pow <- try(analyse_trial(
+  res_l[[3]] <- analyse_trial(
     data_tr = data_i, 
     true_trt_eff = true_trt_eff,
     ni_margin = n_i_m,
@@ -541,31 +529,10 @@ run_trial_i <- function(data_i,
     power = T,
     args_cmdstan = cmdstan_args,
     seed = seed
-  ))
-  # If for any reason simulations fails
-  # try once more with different seed and then fail
-  if (is_error_try(res_pow)) {
-    res_pow <- try(analyse_trial(
-      data_tr = data_i, 
-      true_trt_eff = true_trt_eff,
-      ni_margin = n_i_m,
-      alpha = alpha,
-      mod_stan = mod,
-      soc_pri = soc_pri_info,
-      trt_pri = trt_pri,
-      cov_va0_pri = cov_va0_pri,
-      sd_pri = sd_pri,
-      power = T,
-      args_cmdstan = cmdstan_args,
-      seed = seed + 10112
-    ))
-  }
-  if (is_error_try(res_pow)) {
-    res_pow <- fail_df
-  }
+  )
   
   ### MAP prior
-  res_map <- try(analyse_trial(
+  res_l[[4]] <- analyse_trial(
     data_tr = data_i, 
     true_trt_eff = true_trt_eff,
     ni_margin = n_i_m,
@@ -578,38 +545,25 @@ run_trial_i <- function(data_i,
     power = F,
     args_cmdstan = cmdstan_args,
     seed = seed
-  ))
-  # If for any reason simulations fails
-  # try once more with different seed and then fail
-  if (is_error_try(res_map)) {
-    res_map <- try(analyse_trial(
-      data_tr = data_i, 
-      true_trt_eff = true_trt_eff,
-      ni_margin = n_i_m,
-      alpha = alpha,
-      mod_stan = mod,
-      soc_pri = soc_pri_mix,
-      trt_pri = trt_pri,
-      cov_va0_pri = cov_va0_pri,
-      sd_pri = sd_pri,
-      power = F,
-      args_cmdstan = cmdstan_args,
-      seed = seed + 10112
-    ))
-  }
-  if (is_error_try(res_map)) {
-    res_map <- fail_df
-  }
+  )
   
+
+  ### Output
+  # Was convergence achieved
+  # Append this to res and sens_df for easy results analysis
+  conv_df <- lapply(res_l, function(x) x$CONV) %>% 
+    bind_rows(.id = "PRIOR") 
+  
+  # MCMC results
+  res_df <- lapply(res_l, function(x) x$RES) %>% 
+    bind_rows(.id = "PRIOR") %>% 
+    left_join(conv_df, .)
+  
+  # Sensitivity analysis dataframe
+  sens_df <- lapply(res_l, function(x) x$SENS) %>% 
+    bind_rows(.id = "PRIOR") %>% 
+    left_join(conv_df, .)
+ 
   ### Return
-  # Common part of results
-  res_df <- tibble(
-    PRIOR = c("NON_INFO", "INFO", "POWER", "MIX"),
-    DATA = data_ind[i]
-  )
-  
-  bind_cols(
-    res_df,
-    bind_rows(res_non_info, res_info, res_pow, res_map) 
-  )
+  list(RES = res_df, SENS = sens_df)
 }
